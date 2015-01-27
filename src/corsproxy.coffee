@@ -38,6 +38,8 @@ module.exports = (req, res, proxy) ->
       }
       path = req.url
       req.headers.host = target0.hostname;
+      if target0.auth
+         req.headers.authorization = 'Basic ' + new Buffer(target0.auth).toString('base64');
     else
       [ignore, hostname, path] = req.url.match(/\/([^\/]*)(.*)/)
       [host, port] = hostname.split(':')
@@ -46,8 +48,6 @@ module.exports = (req, res, proxy) ->
         port: port || 80
       }
       req.headers.host = hostname
-      if target0.auth
-         req.headers.authorization = 'Basic ' + new Buffer(target0.auth).toString('base64');
     unless target and target.host and target.port
       res.write "Cannot determine target host\n"
       res.end();
@@ -60,6 +60,11 @@ module.exports = (req, res, proxy) ->
 
     # req.headers.host = hostname
     req.url          = path
+
+    if req.headers['x-corsproxy-forward-to-https'] 
+      # console.log "x-corsproxy-forward-to-https existed."
+      target.https = true
+      delete req.headers['x-corsproxy-forward-to-https']
 
     # Put your custom server logic here, then proxy
     proxy.proxyRequest(req, res, target);
